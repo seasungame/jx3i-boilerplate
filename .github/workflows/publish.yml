@@ -43,8 +43,10 @@ jobs:
 
       - name: Set up Git user
         run: |
+          # 默认使用 bot 身份进行常规操作
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          echo "::notice::Using github-actions bot identity for regular operations"
 
       - name: Switch and hard reset to master
         run: |
@@ -129,9 +131,44 @@ jobs:
           path: '\!src-dist/dist/*.7z'
 
       - name: Trigger Lint Workflow
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ github.event.inputs.version }}"
           BRANCH="release/v${VERSION}"
-          gh workflow run lint.yml -f ref=$BRANCH
+          if [[ "${{ secrets.PAT_TOKEN }}" != "" ]]; then
+            echo "::notice::PAT_TOKEN found. Creating trigger commit with user identity."
+
+            # 获取用户信息
+            USER_INFO=$(curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" https://api.github.com/user)
+            USER_NAME=$(echo $USER_INFO | jq -r .name)
+            USER_EMAIL=$(echo $USER_INFO | jq -r .email)
+
+            # 如果 name 为 null，使用 login
+            if [[ "$USER_NAME" == "null" ]]; then
+              USER_NAME=$(echo $USER_INFO | jq -r .login)
+            fi
+            # 如果 email 为 null，使用默认格式
+            if [[ "$USER_EMAIL" == "null" ]]; then
+              USER_LOGIN=$(echo $USER_INFO | jq -r .login)
+              USER_EMAIL="${USER_LOGIN}@users.noreply.github.com"
+            fi
+
+            # 切换到 release 分支
+            git checkout $BRANCH
+
+            # 临时设置用户身份和 remote URL
+            git config user.name "$USER_NAME"
+            git config user.email "$USER_EMAIL"
+            git remote set-url origin "https://tinymins:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git"
+
+            # 创建触发文件并提交
+            echo "# Trigger lint for release v${VERSION} - $(date)" > .lint-trigger
+            git add .lint-trigger
+            git commit -m "trigger: lint workflow for v${VERSION}"
+            git push origin $BRANCH
+
+            echo "::notice::Trigger commit pushed by: $USER_NAME <$USER_EMAIL>"
+          else
+            echo "::warning::No PAT_TOKEN found. Lint workflow may not be triggered automatically."
+            echo "::notice::Please set up PAT_TOKEN secret for automatic lint triggering."
+            echo "::notice::You can manually trigger lint workflow if needed."
+          fi
