@@ -115,6 +115,9 @@ jobs:
           VERSION="${{ github.event.inputs.version }}"
           BRANCH="release/v${VERSION}"
           git checkout -b $BRANCH
+          echo "# Release v${VERSION}" > .release-trigger
+          git add .release-trigger
+          git commit -m "style: lint for release v${VERSION}"
           git push -u origin $BRANCH -f
           gh pr create \
             --title "release: v${VERSION}" \
@@ -134,4 +137,6 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version }}"
           BRANCH="release/v${VERSION}"
-          gh workflow run lint.yml -f ref=$BRANCH
+          git checkout $BRANCH
+          git reset HEAD~1 --hard
+          git push origin $BRANCH -f
