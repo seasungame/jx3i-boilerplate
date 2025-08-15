@@ -3,6 +3,10 @@ name: Lint
 on:
   push:
   pull_request:
+  workflow_run:
+    workflows: ["Publish"]
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       ref:
