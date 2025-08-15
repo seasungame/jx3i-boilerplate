@@ -137,6 +137,8 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version }}"
           BRANCH="release/v${VERSION}"
+          TOKEN="${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}"
           git checkout $BRANCH
           git reset HEAD~1 --hard
+          git remote set-url origin "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git"
           git push origin $BRANCH -f
