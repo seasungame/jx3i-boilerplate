@@ -110,7 +110,7 @@ jobs:
         run: |
           git push -f origin master:stable
 
-      - name: Create release branch and PR
+      - name: Create release branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -118,11 +118,19 @@ jobs:
           BRANCH="release/v${VERSION}"
           git checkout -b $BRANCH
           git push -u origin $BRANCH -f
-          gh pr create \
-            --title "release: v${VERSION}" \
-            --body "Automated release PR for version ${VERSION}" \
-            --base master \
-            --head $BRANCH || echo "PR already exists or failed to create, continuing..."
+          # gh pr create \
+          #   --title "release: v${VERSION}" \
+          #   --body "Automated release PR for version ${VERSION}" \
+          #   --base master \
+          #   --head $BRANCH || echo "PR already exists or failed to create, continuing..."
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          title: "release: v${{ github.event.inputs.version }}"
+          body: "Automated release PR for version ${{ github.event.inputs.version }}"
+          branch: "release/v${{ github.event.inputs.version }}"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
