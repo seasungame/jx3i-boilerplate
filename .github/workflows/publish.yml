@@ -130,6 +130,7 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           title: "release: v${{ github.event.inputs.version }}"
           body: "Automated release PR for version ${{ github.event.inputs.version }}"
+          base: master
           branch: "release/v${{ github.event.inputs.version }}"
 
       - name: Upload Artifacts
