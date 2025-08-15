@@ -138,6 +138,10 @@ jobs:
           VERSION="${{ github.event.inputs.version }}"
           BRANCH="release/v${VERSION}"
           TOKEN="${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}"
+          if [[ "${{ secrets.PAT_TOKEN }}" = "" ]]; then
+            echo "::warning::No PAT_TOKEN found. Lint workflow may not be triggered automatically."
+            echo "::notice::Please set up PAT_TOKEN secret for automatic lint triggering."
+          fi
           git checkout $BRANCH
           git reset HEAD~1 --hard
           git remote set-url origin "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git"
